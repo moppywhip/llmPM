@@ -1,6 +1,61 @@
 from datetime import datetime, timedelta
-from workstream import Workstream, IncomingMessage
+from workstream import Workstream, IncomingMessage, Document
 import os
+
+
+def create_baseline_docs() -> list[Document]:
+    """Create baseline documents for the auth service project."""
+    return [
+        Document(
+            content="""
+            Authentication Service Overview
+
+            Current Implementation:
+            - JWT-based authentication
+            - Direct database lookups for token validation
+            - Average latency: 150ms
+            - Peak load: 1000 req/sec
+
+            Known Issues:
+            - High database load during peak hours
+            - Occasional timeout errors under heavy load
+            - Token revocation requires full database scan
+
+            Performance Requirements:
+            - Target latency: <50ms
+            - Support for 2000 req/sec
+            - Immediate token revocation capability
+            """,
+            metadata={
+                "title": "Auth Service Technical Spec",
+                "type": "specification",
+                "version": "1.0"
+            },
+            timestamp=datetime(2024, 2, 28, 15, 0)
+        ),
+        Document(
+            content="""
+            Redis Caching Implementation Guidelines
+
+            Requirements:
+            1. Implement write-through caching
+            2. Set up connection pooling
+            3. Configure proper error handling and retries
+            4. Implement monitoring and alerts
+
+            Success Criteria:
+            - 50% reduction in database load
+            - 99th percentile latency under 100ms
+            - Zero data inconsistency incidents
+            """,
+            metadata={
+                "title": "Redis Caching RFC",
+                "type": "rfc",
+                "version": "1.0"
+            },
+            timestamp=datetime(2024, 2, 29, 10, 0)
+        )
+    ]
 
 
 def create_test_messages() -> list[IncomingMessage]:
@@ -25,7 +80,7 @@ def create_test_messages() -> list[IncomingMessage]:
             text="Architecture decision: Will implement both TTL (24h) and explicit invalidation approaches"
         ),
 
-        # Day 2: Development
+        # Day 2: Development Progress
         IncomingMessage(
             timestamp=base_time + timedelta(days=1),
             stream_id="auth-service",
@@ -37,7 +92,7 @@ def create_test_messages() -> list[IncomingMessage]:
             text="PR feedback received: Need to improve error handling and add connection retries"
         ),
 
-        # Day 3: Testing
+        # Day 3: Testing Phase
         IncomingMessage(
             timestamp=base_time + timedelta(days=2),
             stream_id="auth-service",
@@ -74,10 +129,12 @@ def main():
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
+    # Create workstream with baseline documents
     workstream = Workstream(
         name="Auth Service Caching Feature",
         streams=["auth-service", "backend-team"],
-        api_key=api_key
+        api_key=api_key,
+        baseline_docs=create_baseline_docs()
     )
 
     # Process messages
@@ -89,7 +146,9 @@ def main():
         print(f"Stream: {message.stream_id}")
         print(f"Content: {message.text}")
 
-        workstream.process_message(message)
+        was_added = workstream.process_message(message)
+
+        print(f"\nMessage {'added to timeline' if was_added else 'stored as context'}")
 
         print("\nCurrent Summary:")
         print("-" * 50)
@@ -99,6 +158,11 @@ def main():
         # Optional: uncomment to see full timeline
         # print("\nFull Timeline:")
         # print(workstream.timeline)
+
+        # Optional: uncomment to see pending context
+        # print("\nPending Context:")
+        # for msg in workstream.pending_context:
+        #     print(f"[{msg.timestamp}] {msg.stream_id}: {msg.text}")
 
         input("Press Enter to continue to next message...")
 
