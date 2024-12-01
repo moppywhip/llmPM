@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from workstream import Workstream, IncomingMessage, Document
 import os
-
+from pathlib import Path
 
 def create_baseline_docs() -> list[Document]:
     """Create baseline documents for the auth service project."""
@@ -123,11 +123,21 @@ def create_test_messages() -> list[IncomingMessage]:
     ]
 
 
+def ensure_test_folder():
+    """Create test folder if it doesn't exist."""
+    test_dir = Path("test")
+    test_dir.mkdir(exist_ok=True)
+    return test_dir
+
+
 def main():
     # Initialize workstream
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+
+    # Create test directory and get path
+    test_dir = ensure_test_folder()
 
     # Create workstream with baseline documents
     workstream = Workstream(
@@ -150,19 +160,19 @@ def main():
 
         print(f"\nMessage {'added to timeline' if was_added else 'stored as context'}")
 
-        print("\nCurrent Summary:")
-        print("-" * 50)
-        print(workstream.summary)
-        print("-" * 50)
+        # Write timeline and summary to files
+        timeline_path = test_dir / "timeline.txt"
+        summary_path = test_dir / "summary.txt"
+
+        with open(timeline_path, "w") as t:
+            t.write(workstream.timeline)
+
+        with open(summary_path, "w") as s:
+            s.write(workstream.summary)
 
         # Optional: uncomment to see full timeline
-        # print("\nFull Timeline:")
-        # print(workstream.timeline)
-
-        # Optional: uncomment to see pending context
-        # print("\nPending Context:")
-        # for msg in workstream.pending_context:
-        #     print(f"[{msg.timestamp}] {msg.stream_id}: {msg.text}")
+        print("\nFull Timeline:")
+        print(workstream.timeline)
 
         input("Press Enter to continue to next message...")
 
