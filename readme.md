@@ -60,10 +60,3 @@ python workstream_test.py
 ```
 
 The test simulates a software development project but the Workstream class is designed to work with any type of project or workflow.
-
-## Limitations
-
-- Currently uses a simple string for timeline storage
-- No persistence layer
-- Single-instance only
-- No message threading or relationships
